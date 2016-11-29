@@ -1,0 +1,20 @@
+cmake_minimum_required(VERSION 3.7)
+Project(ThresholdFilter)
+
+FIND_PACKAGE(ITK)
+IF(ITK_FOUND)
+	INCLUDE(${ITK_USE_FILE})
+ENDIF(ITK_FOUND)
+
+FIND_PACKAGE(VTK)
+IF(VTK_FOUND)
+	INCLUDE(${VTK_USE_FILE})
+ENDIF(VTK_FOUND)
+
+INCLUDE_DIRECTORIES(${ThresholdFilter_SOURCE_DIR})
+ADD_EXECUTABLE(ThresholdFilter ThresholdFilter.cxx)
+
+TARGET_LINK_LIBRARIES(ThresholdFilter
+	${VTK_LIBRARIES} ${ITK_LIBRARIES}
+	)
+
