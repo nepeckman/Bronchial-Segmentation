@@ -3,6 +3,8 @@
 #include <vector>
 #include <unordered_set>
 #include <queue>
+#include <algorithm>
+#include <cmath>
 #include "itkImage.h"
 #include "itkGDCMImageIO.h"
 #include "itkGDCMSeriesFileNames.h"
@@ -32,11 +34,35 @@ struct Link{
 	Link *next;
 };
 
+struct Point3D {
+	double x;
+	double y;
+	double z;
+};
+
+struct Line3D {
+	Point3D* pt1;
+	Point3D* pt2;
+};
+
+struct Cylinder{
+	Line3D* line;
+	double radius;
+};
+
 typedef std::vector< std::unordered_set< Node* >* > ObjectVectorType;
 Node* findNode(Image3DType::IndexType, Node*);
 Node* buildGraph(Image3DType*);
 int findIndex(Image3DType::SizeType, Image3DType::IndexType);
 int isEqual(Image3DType::IndexType, Image3DType::IndexType);
+bool distanceEqual(double, double);
+double ptDistance(Point3D*, Point3D*);
+double magnitude(Point3D*);
+Point3D* crossProduct(Point3D*, Point3D*);
+Point3D* addPoints(Point3D*, Point3D*);
+Point3D* subPoints(Point3D*, Point3D*);
+bool ptOnSegment(Point3D*, Line3D*);
+double ptToSegmentDistance(Point3D*, Line3D*);
 
 int main(int argc, char** argv)
 {
@@ -287,4 +313,75 @@ Node* buildGraph(Image3DType* image)
 int findIndex(Image3DType::SizeType size, Image3DType::IndexType index)
 {
 	return index[0] * size[1] * size[2] + index[1] * size[2] + index[2];
+}
+
+bool ptEqual(Point3D* pt1, Point3D* pt2)
+{
+	double diffx = std::abs(pt1->x - pt2->x);
+	double diffy = std::abs(pt1->y - pt2->y);
+	double diffz = std::abs(pt1->z - pt2->z);
+	return diffx < 0.01 && diffy < 0.01 && diffz < 0.01;
+}
+
+bool distanceEqual(double d1, double d2)
+{
+	return std::abs(d1 - d2) < 0.01;
+}
+
+double ptDistance(Point3D* pt1, Point3D* pt2)
+{
+	double diffx = std::abs(pt1->x - pt2->x);
+	double diffy = std::abs(pt1->y - pt2->y);
+	double diffz = std::abs(pt1->z - pt2->z);
+	return std::sqrt(std::pow(diffx, 2) + std::pow(diffy, 2) + std::pow(diffz, 2));
+}
+
+Point3D* addPoints(Point3D* pt1, Point3D* pt2)
+{
+	Point3D* rv = new Point3D;
+	rv->x = pt1->x + pt2->x;
+	rv->y = pt1->y + pt2->y;
+	rv->z = pt1->z + pt2->z;
+	return rv;
+}
+
+Point3D* subPoints(Point3D* pt1, Point3D* pt2)
+{
+	Point3D* rv = new Point3D;
+	rv->x = pt1->x - pt2->x;
+	rv->y = pt1->y - pt2->y;
+	rv->z = pt1->z - pt2->z;
+	return rv;
+}
+
+Point3D* crossProduct(Point3D* pt1, Point3D* pt2)
+{
+	Point3D* rv = new Point3D;
+	rv->x = pt1->y * pt2->z - pt1->z * pt2->y;
+	rv->y = pt1->z * pt2->x - pt1->x * pt2->z;
+	rv->z = pt1->x * pt2->y - pt1->y * pt2->x;
+	return rv;
+}
+
+double magnitude(Point3D* pt)
+{
+	return std::sqrt(std::pow(pt->x, 2) + std::pow(pt->y, 2) + std::pow(pt->z, 2));
+}
+
+bool ptOnSegment(Point3D* pt, Line3D* line)
+{
+	return distanceEqual(ptDistance(pt, line->pt1) + ptDistance(pt, line->pt2), ptDistance(line->pt1, line->pt2));
+}
+
+double ptToSegmentDistance(Point3D* pt, Line3D* line)
+{
+	if(ptOnSegment(pt, line))
+	{
+		double numerator = magnitude(crossProduct(subPoints(pt, line->pt1), subPoints(pt, line->pt2)));
+		double denominator = magnitude(subPoints(line->pt2, line->pt1));
+		return numerator/denominator;
+	} else
+	{
+		return std::min(ptDistance(pt, line->pt1), ptDistance(pt, line->pt2));
+	}
 }
