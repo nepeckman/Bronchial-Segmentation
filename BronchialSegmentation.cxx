@@ -8,7 +8,6 @@
 #include "itkGDCMSeriesFileNames.h"
 #include "itkImageSeriesReader.h"
 #include "itkThresholdImageFilter.h"
-#include "itkGradientAnisotropicDiffusionImageFilter.h"
 #include "itkImageFileWriter.h"
 #include <itksys/SystemTools.hxx>
 #include "itkNumericSeriesFileNames.h"
@@ -17,7 +16,6 @@
 
 typedef itk::Image<float, 2> Image2DType;
 typedef itk::Image<float, 3> Image3DType;
-
 
 struct Link;
 struct Node{
@@ -38,8 +36,6 @@ typedef std::vector< std::unordered_set< Node* >* > ObjectVectorType;
 Node* findNode(Image3DType::IndexType, Node*);
 Node* buildGraph(Image3DType*);
 int findIndex(Image3DType::SizeType, Image3DType::IndexType);
-int isBefore(Image3DType::IndexType, Image3DType::IndexType);
-int isAfter(Image3DType::IndexType, Image3DType::IndexType);
 int isEqual(Image3DType::IndexType, Image3DType::IndexType);
 
 int main(int argc, char** argv)
@@ -274,53 +270,9 @@ int main(int argc, char** argv)
 	return 0;
 }
 
-int isBefore(Image3DType::IndexType index1, Image3DType::IndexType index2)
-{
-	return (index1[0] < index2[0]) || (index1[0] == index2[0] && index1[1] < index2[1]) ||
-			(index1[0] == index2[0] && index1[1] == index2[1] && index1[2] < index2[2]);
-}
-
-int isAfter(Image3DType::IndexType index1, Image3DType::IndexType index2)
-{
-	return (index1[0] > index2[0]) || (index1[0] == index2[0] && index1[1] > index2[1]) ||
-			(index1[0] == index2[0] && index1[1] == index2[1] && index1[2] > index2[2]);
-}
 int isEqual(Image3DType::IndexType index1, Image3DType::IndexType index2)
 {
 	return (index1[0] == index2[0] && index1[1] == index2[1] && index1[2] == index2[2]);
-}
-
-Node* findNode(Image3DType::IndexType index, Node* node)
-{
-	if(isEqual(index, *(node->index)))
-	{
-		return node;
-	} else if(isBefore(index, *(node->index)))
-	{
-		Node* current = node;
-		while(current->previous && isBefore(index, *(current->index)))
-		{
-			current = current->previous;
-			if(isEqual(index, *(current->index)))
-			{
-				return current;
-			}
-		}
-		return NULL;
-	} else if(isAfter(index, *(node->index)))
-	{
-		Node* current = node;
-		while(current->next && isAfter(index, *(current->index)))
-		{
-			current = current->next;
-			if(isEqual(index, *(current->index)))
-			{
-				return current;
-			}
-		}
-		return NULL;
-	}
-	return NULL;
 }
 
 Node* buildGraph(Image3DType* image)
