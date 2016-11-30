@@ -34,11 +34,6 @@ struct Link{
 	Link *next;
 };
 
-struct Queue{
-	Node* head;
-	Node* tail;
-};
-
 typedef std::vector< std::unordered_set< Node* >* > ObjectVectorType;
 Node* findNode(Image3DType::IndexType, Node*);
 Node* buildGraph(Image3DType*);
@@ -46,10 +41,6 @@ int findIndex(Image3DType::SizeType, Image3DType::IndexType);
 int isBefore(Image3DType::IndexType, Image3DType::IndexType);
 int isAfter(Image3DType::IndexType, Image3DType::IndexType);
 int isEqual(Image3DType::IndexType, Image3DType::IndexType);
-Queue* buildQueue();
-void enqueue(Queue*, Node*);
-Node* dequeue(Queue*);
-int isEmpty(Queue*);
 
 int main(int argc, char** argv)
 {
@@ -225,9 +216,10 @@ int main(int argc, char** argv)
 	std::cout << "Cleaning small objects" << std::endl;
 	for(ObjectVectorType::size_type i = 0; i != objects.size(); i++)
 	{
-		if(objects[i]->size() < 10)
+		std::unordered_set< Node* > object = *objects[i];
+		if(object.size() > 500000 || object.size() < 100000)
 		{
-			for(std::unordered_set< Node*>::iterator it = objects[i]->begin(); it != objects[i]->end(); ++it)
+			for(std::unordered_set< Node*>::iterator it = object.begin(); it != object.end(); ++it)
 			{
 				Node* n = *(it);
 				Image3DType::IndexType itIndex = *(n->index);
@@ -343,46 +335,4 @@ Node* buildGraph(Image3DType* image)
 int findIndex(Image3DType::SizeType size, Image3DType::IndexType index)
 {
 	return index[0] * size[1] * size[2] + index[1] * size[2] + index[2];
-}
-
-Queue* buildQueue()
-{
-	Queue* rv = new Queue;
-	rv->head = NULL;
-	rv->tail = NULL;
-	return rv;
-}
-
-void enqueue(Queue* queue, Node* node)
-{
-	if(queue->head == NULL)
-	{
-		queue->head = node;
-	}
-	node->previous = queue->tail;
-	node->next = NULL;
-	queue->tail = node;
-	return;
-}
-
-Node* dequeue(Queue* queue)
-{
-	Node* rv = queue->head;
-	queue->head = queue->head->next;
-	if(queue->head == NULL)
-	{
-		queue->tail = queue->head;
-	}
-	return rv;
-}
-
-int isEmpty(Queue* queue)
-{
-	if(queue->head == NULL)
-	{
-		return 0;
-	} else
-	{
-		return 1;
-	}
 }
