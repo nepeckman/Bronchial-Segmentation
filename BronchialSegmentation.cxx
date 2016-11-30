@@ -61,8 +61,11 @@ double magnitude(Point3D*);
 Point3D* crossProduct(Point3D*, Point3D*);
 Point3D* addPoints(Point3D*, Point3D*);
 Point3D* subPoints(Point3D*, Point3D*);
-bool ptOnSegment(Point3D*, Line3D*);
+Point3D* scaleVector(Point3D*, double);
+bool ptIsOnSegment(Point3D*, Line3D*);
 double ptToSegmentDistance(Point3D*, Line3D*);
+Point3D* moveAlongLine(Line3D*, double);
+Point3D* ptOnLine(Point3D*, Line3D*);
 
 int main(int argc, char** argv)
 {
@@ -354,6 +357,15 @@ Point3D* subPoints(Point3D* pt1, Point3D* pt2)
 	return rv;
 }
 
+Point3D* scaleVector(Point3D* pt, double c)
+{
+	Point3D* rv = new Point3D;
+	rv->x = pt->x * c;
+	rv->y = pt->y * c;
+	rv->z = pt->z * c;
+	return rv;
+}
+
 Point3D* crossProduct(Point3D* pt1, Point3D* pt2)
 {
 	Point3D* rv = new Point3D;
@@ -368,20 +380,28 @@ double magnitude(Point3D* pt)
 	return std::sqrt(std::pow(pt->x, 2) + std::pow(pt->y, 2) + std::pow(pt->z, 2));
 }
 
-bool ptOnSegment(Point3D* pt, Line3D* line)
+bool ptIsOnSegment(Point3D* pt, Line3D* line)
 {
 	return distanceEqual(ptDistance(pt, line->pt1) + ptDistance(pt, line->pt2), ptDistance(line->pt1, line->pt2));
 }
 
-double ptToSegmentDistance(Point3D* pt, Line3D* line)
+double ptToLineDistance(Point3D* pt, Line3D* line)
 {
-	if(ptOnSegment(pt, line))
-	{
-		double numerator = magnitude(crossProduct(subPoints(pt, line->pt1), subPoints(pt, line->pt2)));
-		double denominator = magnitude(subPoints(line->pt2, line->pt1));
-		return numerator/denominator;
-	} else
-	{
-		return std::min(ptDistance(pt, line->pt1), ptDistance(pt, line->pt2));
-	}
+	double numerator = magnitude(crossProduct(subPoints(pt, line->pt1), subPoints(pt, line->pt2)));
+	double denominator = magnitude(subPoints(line->pt2, line->pt1));
+	return numerator/denominator;
+}
+
+Point3D* moveAlongLine(Line3D* line, double distance)
+{
+	Point3D* vector = subPoints(line->pt2, line->pt1);
+	Point3D* movedVector = scaleVector(vector, distance/ptDistance(line->pt1, line->pt2));
+	return addPoints(line->pt1, movedVector);
+}
+
+Point3D* ptOnLine(Point3D* pt, Line3D* line)
+{
+	double ptToSeg = ptToSegmentDistance(pt, line);
+	double linePtToIntersection = std::sqrt(std::pow(ptDistance(line->pt1, pt), 2) - std::pow(ptToSeg, 2));
+	return moveAlongLine(line, linePtToIntersection);
 }
