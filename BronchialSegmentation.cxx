@@ -63,9 +63,10 @@ Point3D* addPoints(Point3D*, Point3D*);
 Point3D* subPoints(Point3D*, Point3D*);
 Point3D* scaleVector(Point3D*, double);
 bool ptIsOnSegment(Point3D*, Line3D*);
-double ptToSegmentDistance(Point3D*, Line3D*);
+double ptToLineDistance(Point3D*, Line3D*);
 Point3D* moveAlongLine(Line3D*, double);
 Point3D* ptOnLine(Point3D*, Line3D*);
+bool ptIsInCylinder(Point3D*, Cylinder*);
 
 int main(int argc, char** argv)
 {
@@ -401,7 +402,19 @@ Point3D* moveAlongLine(Line3D* line, double distance)
 
 Point3D* ptOnLine(Point3D* pt, Line3D* line)
 {
-	double ptToSeg = ptToSegmentDistance(pt, line);
+	double ptToSeg = ptToLineDistance(pt, line);
 	double linePtToIntersection = std::sqrt(std::pow(ptDistance(line->pt1, pt), 2) - std::pow(ptToSeg, 2));
 	return moveAlongLine(line, linePtToIntersection);
+}
+
+bool ptIsInCylinder(Point3D* pt, Cylinder* cylinder)
+{
+	Point3D* intersection = ptOnLine(pt, cylinder->line);
+	if(ptIsOnSegment(intersection, cylinder->line))
+	{
+		return ptDistance(intersection, pt) < cylinder->radius;
+	} else
+	{
+		return false;
+	}
 }
