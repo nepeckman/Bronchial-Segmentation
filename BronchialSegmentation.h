@@ -1,3 +1,5 @@
+#ifndef BRONCHIAL_SEGMENTATION_H
+#define BRONCHIAL_SEGMENTATION_H
 #include </usr/local/Cellar/eigen/3.3.0/include/eigen3/Eigen/Dense>
 #include <unordered_set>
 #include "itkImage.h"
@@ -30,16 +32,12 @@ struct Cylinder{
 	double radius;
 };
 
+struct Cube{
+  Eigen::Vector3d center;
+  double halfSide;
+};
+
 typedef std::vector< std::unordered_set< Node* >* > ObjectVectorType;
-Node* findNode(Image3DType::IndexType, Node*);
 Node* buildGraph(Image3DType*);
-int findIndex(Image3DType::SizeType, Image3DType::IndexType);
-int isEqual(Image3DType::IndexType, Image3DType::IndexType);
-bool distanceEqual(double, double);
-double pointDistance(Eigen::Vector3d &, Eigen::Vector3d &);
-double magnitude(Eigen::Vector3d &);
-bool pointIsOnSegment(Eigen::Vector3d &, Line3D*);
-double ptToLineDistance(Eigen::Vector3d &, Line3D*);
-Eigen::Vector3d moveAlongLine(Line3D*, double);
-Eigen::Vector3d ptOnLine(Eigen::Vector3d&, Line3D*);
-bool ptIsInCylinder(Eigen::Vector3d &, Cylinder*);
+
+#endif
