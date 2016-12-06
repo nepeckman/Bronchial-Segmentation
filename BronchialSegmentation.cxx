@@ -1,7 +1,10 @@
+#include "BronchialSegmentation.h"
+#include "CollisionDetection.h"
 #include <iostream>
 #include <string>
 #include <vector>
 #include <unordered_set>
+#include </usr/local/Cellar/eigen/3.3.0/include/eigen3/Eigen/Dense>
 #include <queue>
 #include <algorithm>
 #include <cmath>
@@ -16,61 +19,33 @@
 #include "itkImageSeriesWriter.h"
 #include "itkExceptionObject.h"
 
-typedef itk::Image<float, 2> Image2DType;
-typedef itk::Image<float, 3> Image3DType;
+typedef itk::ImageSeriesReader<Image3DType> ReaderType;
+typedef itk::GDCMImageIO ImageIOType;
 
-struct Link;
-struct Node{
-	Image3DType::IndexType *index;
-	Link *links;
-	Node *next;
-	Node *previous;
-	int processed;
+class BronchialSegmentation : public CollisionDetection {
+public:
+	Image3DType* segmentedImage;
+	std::vector< Node* > nodeVector;
+	ReaderType::Pointer reader;
+	ImageIOType::Pointer dicomIO;
+	Image3DType::SizeType size;
+	bool inCollision(const std::vector<Eigen::Vector3d> & point1s,
+			   					 const std::vector<Eigen::Vector3d> & point2s,
+			   			 		 const std::vector<double> & radii,
+			   			 		 std::vector<int> & indices) const {
+					 				 	return true;
+				 						}
+	BronchialSegmentation(int argc, char** argv);
+	void visualize(int argc, char** argv);
 };
 
-struct Link{
-	Node *to;
-	Node *from;
-	Link *next;
-};
+int main(int argc, char** argv){
+	BronchialSegmentation bronchseg(argc, argv);
+	return 0;
+}
 
-struct Point3D {
-	double x;
-	double y;
-	double z;
-};
-
-struct Line3D {
-	Point3D* pt1;
-	Point3D* pt2;
-};
-
-struct Cylinder{
-	Line3D* line;
-	double radius;
-};
-
-typedef std::vector< std::unordered_set< Node* >* > ObjectVectorType;
-Node* findNode(Image3DType::IndexType, Node*);
-Node* buildGraph(Image3DType*);
-int findIndex(Image3DType::SizeType, Image3DType::IndexType);
-int isEqual(Image3DType::IndexType, Image3DType::IndexType);
-bool distanceEqual(double, double);
-double ptDistance(Point3D*, Point3D*);
-double magnitude(Point3D*);
-Point3D* crossProduct(Point3D*, Point3D*);
-Point3D* addPoints(Point3D*, Point3D*);
-Point3D* subPoints(Point3D*, Point3D*);
-Point3D* scaleVector(Point3D*, double);
-bool ptIsOnSegment(Point3D*, Line3D*);
-double ptToLineDistance(Point3D*, Line3D*);
-Point3D* moveAlongLine(Line3D*, double);
-Point3D* ptOnLine(Point3D*, Line3D*);
-bool ptIsInCylinder(Point3D*, Cylinder*);
-
-int main(int argc, char** argv)
+BronchialSegmentation::BronchialSegmentation(int argc, char** argv)
 {
-		
 	// create name generator
 	std::cout << "Creating name generator" << std::endl;
 	typedef itk::GDCMSeriesFileNames NamesGeneratorType;
@@ -79,10 +54,10 @@ int main(int argc, char** argv)
 
 	// create dicom reader
 	std::cout << "Creating dicom reader" << std::endl;
-	typedef itk::ImageSeriesReader<Image3DType> ReaderType;
-	ReaderType::Pointer reader = ReaderType::New();
-	typedef itk::GDCMImageIO ImageIOType;
-	ImageIOType::Pointer dicomIO = ImageIOType::New();
+
+	reader = ReaderType::New();
+
+	dicomIO = ImageIOType::New();
 	reader->SetImageIO(dicomIO);
 
 	// get series IDs
@@ -96,14 +71,13 @@ int main(int argc, char** argv)
 	FileNamesContainer fileNames;
 	fileNames = nameGenerator->GetFileNames(seriesUID.begin()->c_str());
 	reader->SetFileNames(fileNames);
-
 	reader->Update();
 
 	// read image data
 	std::cout << "Reading image data" << std::endl;
 	Image3DType::Pointer image = reader->GetOutput();
 	Image3DType::RegionType region = image->GetLargestPossibleRegion();
-	Image3DType::SizeType size = region.GetSize();
+	size = region.GetSize();
 
 	// create threshold filter
 	std::cout << "Creating threshold filter" << std::endl;
@@ -112,7 +86,7 @@ int main(int argc, char** argv)
 	{
 		minIntensity = 0;
 		maxIntensity = 65536;
-	} else 
+	} else
 	{
 		minIntensity = std::stoi(argv[3]);
 		maxIntensity = std::stoi(argv[4]);
@@ -121,21 +95,21 @@ int main(int argc, char** argv)
 	std::cout << "Threshold above \"" << maxIntensity << "\"" << std::endl;
 	typedef itk::ThresholdImageFilter<Image3DType> ThresholdImageFilterType;
 	ThresholdImageFilterType::Pointer thresholdFilter = ThresholdImageFilterType::New();
-	thresholdFilter->ThresholdOutside(minIntensity, maxIntensity); 
+	thresholdFilter->ThresholdOutside(minIntensity, maxIntensity);
 	thresholdFilter->SetOutsideValue(0);
 	thresholdFilter->SetInput(reader->GetOutput());
 	thresholdFilter->Update();
 
-	Image3DType *segmentedImage = thresholdFilter->GetOutput();
+	Image3DType* segmentedImage = thresholdFilter->GetOutput();
 
 	//  make graph
-	//  intialize nodes	
+	//  intialize nodes
+
 	std::cout << "Initializing graph nodes" << std::endl;
 	Node *tail;
 	Node *current;
 	Node *head;
 
-	std::vector< Node* > nodeVector;
 	for(int i = 0; i < size[0]; i++)
 	{
 		for(int j = 0; j < size[1]; j++)
@@ -189,7 +163,7 @@ int main(int argc, char** argv)
 						(*adjacentIndex)[1] = j;
 						(*adjacentIndex)[2] = k;
 						Node* adjacentNode = nodeVector[findIndex(size, *adjacentIndex)];
-						if( (currentIndex[0] != i || currentIndex[1] != j || currentIndex[2] != k) && 
+						if( (currentIndex[0] != i || currentIndex[1] != j || currentIndex[2] != k) &&
 						(adjacentNode != NULL))
 						{
 							Link *link = new Link;
@@ -203,7 +177,7 @@ int main(int argc, char** argv)
 				}
 			}
 		}
-		current = current->next;	
+		current = current->next;
 	}
 
 	std::cout << "Finding connected objects" << std::endl;
@@ -256,7 +230,12 @@ int main(int argc, char** argv)
 	}
 
 	// make output directory
-	std::string writedir;
+
+}
+
+void BronchialSegmentation::visualize(int argc, char** argv){
+
+std::string writedir;
 	if(argc < 2)
 	{
 		writedir = "out";
@@ -295,9 +274,7 @@ int main(int argc, char** argv)
 	{
 		std::cerr << "Exception throw while writing the series" << std::endl;
 		std::cerr << excp << std::endl;
-		return 1;
 	}
-	return 0;
 }
 
 int isEqual(Image3DType::IndexType index1, Image3DType::IndexType index2)
@@ -319,102 +296,58 @@ int findIndex(Image3DType::SizeType size, Image3DType::IndexType index)
 	return index[0] * size[1] * size[2] + index[1] * size[2] + index[2];
 }
 
-bool ptEqual(Point3D* pt1, Point3D* pt2)
-{
-	double diffx = std::abs(pt1->x - pt2->x);
-	double diffy = std::abs(pt1->y - pt2->y);
-	double diffz = std::abs(pt1->z - pt2->z);
-	return diffx < 0.01 && diffy < 0.01 && diffz < 0.01;
-}
-
 bool distanceEqual(double d1, double d2)
 {
 	return std::abs(d1 - d2) < 0.01;
 }
 
-double ptDistance(Point3D* pt1, Point3D* pt2)
+/*double pointDistance(const Eigen::Vector3d &pt1, const Eigen::Vector3d &pt2)
 {
-	double diffx = std::abs(pt1->x - pt2->x);
-	double diffy = std::abs(pt1->y - pt2->y);
-	double diffz = std::abs(pt1->z - pt2->z);
+	double diffx = std::abs(pt1(0) - pt2(0));
+	double diffy = std::abs(pt1(1) - pt2(1));
+	double diffz = std::abs(pt1(2) - pt2(2));
 	return std::sqrt(std::pow(diffx, 2) + std::pow(diffy, 2) + std::pow(diffz, 2));
+}*/
+
+double magnitude(const Eigen::Vector3d &pt)
+{
+	return std::sqrt(std::pow(pt(0), 2) + std::pow(pt(1), 2) + std::pow(pt(2), 2));
 }
 
-Point3D* addPoints(Point3D* pt1, Point3D* pt2)
+/*bool pointIsOnSegment(const Eigen::Vector3d &pt, Line3D *line)
 {
-	Point3D* rv = new Point3D;
-	rv->x = pt1->x + pt2->x;
-	rv->y = pt1->y + pt2->y;
-	rv->z = pt1->z + pt2->z;
-	return rv;
-}
+	return distanceEqual(pointDistance(pt, line->pt1) + pointDistance(pt, line->pt2), pointDistance(line->pt1, line->pt2));
+}*/
 
-Point3D* subPoints(Point3D* pt1, Point3D* pt2)
+double ptToLineDistance(const Eigen::Vector3d &pt, Line3D* line)
 {
-	Point3D* rv = new Point3D;
-	rv->x = pt1->x - pt2->x;
-	rv->y = pt1->y - pt2->y;
-	rv->z = pt1->z - pt2->z;
-	return rv;
-}
-
-Point3D* scaleVector(Point3D* pt, double c)
-{
-	Point3D* rv = new Point3D;
-	rv->x = pt->x * c;
-	rv->y = pt->y * c;
-	rv->z = pt->z * c;
-	return rv;
-}
-
-Point3D* crossProduct(Point3D* pt1, Point3D* pt2)
-{
-	Point3D* rv = new Point3D;
-	rv->x = pt1->y * pt2->z - pt1->z * pt2->y;
-	rv->y = pt1->z * pt2->x - pt1->x * pt2->z;
-	rv->z = pt1->x * pt2->y - pt1->y * pt2->x;
-	return rv;
-}
-
-double magnitude(Point3D* pt)
-{
-	return std::sqrt(std::pow(pt->x, 2) + std::pow(pt->y, 2) + std::pow(pt->z, 2));
-}
-
-bool ptIsOnSegment(Point3D* pt, Line3D* line)
-{
-	return distanceEqual(ptDistance(pt, line->pt1) + ptDistance(pt, line->pt2), ptDistance(line->pt1, line->pt2));
-}
-
-double ptToLineDistance(Point3D* pt, Line3D* line)
-{
-	double numerator = magnitude(crossProduct(subPoints(pt, line->pt1), subPoints(pt, line->pt2)));
-	double denominator = magnitude(subPoints(line->pt2, line->pt1));
+	double numerator = magnitude((pt - line->pt1).cross(pt - line->pt2));
+	double denominator = magnitude(line->pt2 - line->pt1);
 	return numerator/denominator;
 }
 
-Point3D* moveAlongLine(Line3D* line, double distance)
+/*Eigen::Vector3d moveAlongLine(Line3D* line, double distance)
 {
-	Point3D* vector = subPoints(line->pt2, line->pt1);
-	Point3D* movedVector = scaleVector(vector, distance/ptDistance(line->pt1, line->pt2));
-	return addPoints(line->pt1, movedVector);
-}
+	Eigen::Vector3d vector = line->pt2 - line->pt1;
+	Eigen::Vector3d movedVector = vector * distance/pointDistance(line->pt1, line->pt2);
+	return line->pt1 + movedVector;
+}*/
 
-Point3D* ptOnLine(Point3D* pt, Line3D* line)
+/*Eigen::Vector3d ptOnLine(const Eigen::Vector3d &pt, Line3D* line)
 {
 	double ptToSeg = ptToLineDistance(pt, line);
-	double linePtToIntersection = std::sqrt(std::pow(ptDistance(line->pt1, pt), 2) - std::pow(ptToSeg, 2));
+	double linePtToIntersection = std::sqrt(std::pow(pointDistance(line->pt1, pt), 2) - std::pow(ptToSeg, 2));
 	return moveAlongLine(line, linePtToIntersection);
-}
+}*/
 
-bool ptIsInCylinder(Point3D* pt, Cylinder* cylinder)
+/*bool ptIsInCylinder(const Eigen::Vector3d &pt, Cylinder* cylinder)
 {
-	Point3D* intersection = ptOnLine(pt, cylinder->line);
-	if(ptIsOnSegment(intersection, cylinder->line))
+	Eigen::Vector3d intersection = ptOnLine(pt, cylinder->line);
+	if(pointIsOnSegment(intersection, cylinder->line))
 	{
-		return ptDistance(intersection, pt) < cylinder->radius;
+		return pointDistance(intersection, pt) < cylinder->radius;
 	} else
 	{
 		return false;
 	}
-}
+}*/

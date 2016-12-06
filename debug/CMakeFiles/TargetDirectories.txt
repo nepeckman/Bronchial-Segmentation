@@ -1,0 +1,3 @@
+/Users/nicpeckman/motion_planning/BronchialSegmentation/debug/CMakeFiles/rebuild_cache.dir
+/Users/nicpeckman/motion_planning/BronchialSegmentation/debug/CMakeFiles/edit_cache.dir
+/Users/nicpeckman/motion_planning/BronchialSegmentation/debug/CMakeFiles/BronchialSegmentation.dir
