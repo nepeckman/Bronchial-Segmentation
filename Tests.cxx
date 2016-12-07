@@ -37,12 +37,20 @@ int main(int argc, char** argv)
 {
   BronchialSegmentation detector(argc, argv);
   std::vector< Node* > graph = detector.getGraph();
-  for(int i = 0; i < 5; i++)
+  std::cout << "Testing 50 Random Cylinders in Collision with the Object" << std::endl;
+  for(int i = 0; i < 50; i++)
   {
-    std::cout << "Testing random cylinder" << std::endl;
     testRandCylinder(&detector, graph, 4);
-    std::cout << "Testing random path" << std::endl;
+  }
+  std::cout << "Testing 10 Short Clear Random Paths" << std::endl;
+  for(int i = 0; i < 10; i++)
+  {
     testRandPath(&detector, graph, 10);
+  }
+  std::cout << "Testing 3 Long Clear Random Paths" << std::endl;
+  for(int i = 0; i < 3; i++)
+  {
+    testRandPath(&detector, graph, 75);
   }
 
   return 0;
@@ -301,9 +309,9 @@ std::vector<Box*> randPath(std::vector<Node*> graph, Image3DType::SizeType size,
   bool movePossible = true;
   int counter = 0;
   while (movePossible && counter < length) {
-    std::cout << path.back()->pt1[0] << " " << path.back()->pt1[1] << " "  << path.back()->pt1[2] << " "  <<
-                  path.back()->pt2[0] << " "  << path.back()->pt2[1] << " "  << path.back()->pt2[2] << " "  <<
-                  std::endl;
+    //std::cout << path.back()->pt1[0] << " " << path.back()->pt1[1] << " "  << path.back()->pt1[2] << " "  <<
+      //            path.back()->pt2[0] << " "  << path.back()->pt2[1] << " "  << path.back()->pt2[2] << " "  <<
+        //          std::endl;
     std::vector< Box* > clearMoves;
     if(clearDownX(path.back(), graph, size))
     {
