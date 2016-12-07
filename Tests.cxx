@@ -37,9 +37,12 @@ int main(int argc, char** argv)
 {
   BronchialSegmentation detector(argc, argv);
   std::vector< Node* > graph = detector.getGraph();
-  for(int i = 0; i < 10; i++)
+  for(int i = 0; i < 5; i++)
   {
-    testRandCylinder(&detector, graph, 3);
+    std::cout << "Testing random cylinder" << std::endl;
+    testRandCylinder(&detector, graph, 4);
+    std::cout << "Testing random path" << std::endl;
+    testRandPath(&detector, graph, 10);
   }
 
   return 0;
@@ -259,7 +262,6 @@ Eigen::Vector3d randVector(double maxMagnitude)
 Eigen::Vector3d randPointInRadius(Eigen::Vector3d pt, double radius)
 {
   Eigen::Vector3d v = randVector(radius);
-  std::cout << v << " should have magnitude less than " << radius << std::endl;
   return v + pt;
 }
 
@@ -267,7 +269,6 @@ void testRandCylinder(BronchialSegmentation* detector, std::vector< Node*> graph
 {
   Eigen::Vector3d filled = randFilledPoint(graph);
   Eigen::Vector3d midpoint = randPointInRadius(filled, radius);
-  std::cout << detector->pointDistance(filled, midpoint) << std::endl;
   Eigen::Vector3d line = randVector(radius * 2);
   std::vector<Eigen::Vector3d> point1s;
   point1s.push_back(midpoint + line);
@@ -277,8 +278,13 @@ void testRandCylinder(BronchialSegmentation* detector, std::vector< Node*> graph
   radii.push_back(radius);
   std::vector<int> indices;
   bool result = detector->inCollision(point1s, point2s, radii, indices);
-  //assert(result == true);
-  std::cout << result << std::endl;
+  if(result)
+  {
+    std::cout << "Cylinder is in collision (success)" << std::endl;
+  } else
+  {
+    std::cout << "Cylinder is clear (faliure)" << std::endl;
+  }
 }
 
 std::vector<Box*> randPath(std::vector<Node*> graph, Image3DType::SizeType size, int length)
@@ -358,7 +364,13 @@ void testRandPath(BronchialSegmentation* detector, std::vector< Node*> graph, in
     radii.push_back(std::abs(path[i]->pt1[0] - path[i]->pt2[0]));
   }
   bool result = detector->inCollision(point1s, point2s, radii, indices);
-  assert(result == false);
+  if(!result)
+  {
+    std::cout << "Path is clear (success)" << std::endl;
+  } else
+  {
+    std::cout << "Path is not clear (failure)" << std::endl;
+  }
 }
 
 void visualizePath(std::vector<Box*> path)
