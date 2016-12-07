@@ -4,7 +4,7 @@
 #include <string>
 #include <vector>
 #include <unordered_set>
-#include </usr/local/Cellar/eigen/3.3.0/include/eigen3/Eigen/Dense>
+#include <Eigen/Dense>
 #include <queue>
 #include <algorithm>
 #include <cmath>
@@ -377,6 +377,8 @@ bool BronchialSegmentation::inCollision(const std::vector<Eigen::Vector3d> & poi
 					}
 				}
 			}
+			delete cylinder->line;
+			delete cylinder;
 		}
 		return false;
 }

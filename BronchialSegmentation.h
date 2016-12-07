@@ -1,6 +1,6 @@
 #ifndef BRONCHIAL_SEGMENTATION_H
 #define BRONCHIAL_SEGMENTATION_H
-#include </usr/local/Cellar/eigen/3.3.0/include/eigen3/Eigen/Dense>
+#include <Eigen/Dense>
 #include <unordered_set>
 #include "itkImage.h"
 #include "itkGDCMImageIO.h"
