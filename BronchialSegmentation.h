@@ -86,5 +86,6 @@ public:
 	Cube* boundingCube(Cylinder* cylinder) const;
 	Eigen::Vector3d lowestPoint(Cube* cube) const;
 	Eigen::Vector3d highestPoint(Cube* cube) const;
+  std::vector< Node* > getGraph();
 };
 #endif

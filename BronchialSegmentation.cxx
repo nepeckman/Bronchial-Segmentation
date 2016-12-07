@@ -380,3 +380,8 @@ bool BronchialSegmentation::inCollision(const std::vector<Eigen::Vector3d> & poi
 		}
 		return false;
 }
+
+std::vector< Node* > BronchialSegmentation::getGraph()
+{
+	return nodeVector;
+}
