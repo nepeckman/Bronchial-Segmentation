@@ -8,80 +8,28 @@
 #include <queue>
 #include <algorithm>
 #include <cmath>
-#include "itkImage.h"
-#include "itkGDCMImageIO.h"
-#include "itkGDCMSeriesFileNames.h"
-#include "itkImageSeriesReader.h"
-#include "itkThresholdImageFilter.h"
-#include "itkImageFileWriter.h"
 #include <itksys/SystemTools.hxx>
-#include "itkNumericSeriesFileNames.h"
-#include "itkImageSeriesWriter.h"
 #include "itkExceptionObject.h"
-
-typedef itk::ImageSeriesReader<Image3DType> ReaderType;
-typedef itk::GDCMImageIO ImageIOType;
-
-class BronchialSegmentation : public CollisionDetection {
-public:
-	Image3DType* segmentedImage;
-	std::vector< Node* > nodeVector;
-	ReaderType::Pointer reader;
-	ImageIOType::Pointer dicomIO;
-	Image3DType::SizeType size;
-	bool inCollision(const std::vector<Eigen::Vector3d> & point1s,
-			   					 const std::vector<Eigen::Vector3d> & point2s,
-			   			 		 const std::vector<double> & radii,
-			   			 		 std::vector<int> & indices) const;
-	BronchialSegmentation(int argc, char** argv);
-
-	bool ptIsInCylinder(const Eigen::Vector3d &pt, Cylinder* cylinder) const;
-	void visualize(int argc, char** argv);
-	Eigen::Vector3d ptOnLine(const Eigen::Vector3d &pt, Line3D* line) const;
-	Eigen::Vector3d moveAlongLine(Line3D* line, double distance) const;
-	double ptToLineDistance(const Eigen::Vector3d &pt, Line3D* line) const;
-	bool pointIsOnSegment(const Eigen::Vector3d &pt, Line3D *line) const;
-	double magnitude(const Eigen::Vector3d &pt) const;
-	double pointDistance(const Eigen::Vector3d &pt1, const Eigen::Vector3d &pt2) const;
-	bool distanceEqual(double d1, double d2) const;
-	int findIndex(Image3DType::SizeType size, Image3DType::IndexType index) const;
-	int findIndex(Image3DType::SizeType size, int x, int y, int z) const;
-	int isEqual(Image3DType::IndexType index1, Image3DType::IndexType index2) const;
-	double cylinderMaxDistance(Cylinder* cylinder) const;
-	Cube* boundingCube(Cylinder* cylinder) const;
-	Eigen::Vector3d lowestPoint(Cube* cube) const;
-	Eigen::Vector3d highestPoint(Cube* cube) const;
-};
-
-int main(int argc, char** argv){
-	BronchialSegmentation bronchseg(argc, argv);
-	return 0;
-}
 
 BronchialSegmentation::BronchialSegmentation(int argc, char** argv)
 {
 	// create name generator
 	std::cout << "Creating name generator" << std::endl;
-	typedef itk::GDCMSeriesFileNames NamesGeneratorType;
 	NamesGeneratorType::Pointer nameGenerator = NamesGeneratorType::New();
 	nameGenerator->SetDirectory(argv[1]);
 
 	// create dicom reader
 	std::cout << "Creating dicom reader" << std::endl;
-
 	reader = ReaderType::New();
-
 	dicomIO = ImageIOType::New();
 	reader->SetImageIO(dicomIO);
 
 	// get series IDs
 	std::cout << "Creating dicom series ID" << std::endl;
-	typedef std::vector<std::string> SeriesIDContainer;
 	const SeriesIDContainer &seriesUID = nameGenerator->GetSeriesUIDs();
 
 	// get dicom series
 	std::cout << "Getting dicom series" << std::endl;
-	typedef std::vector<std::string> FileNamesContainer;
 	FileNamesContainer fileNames;
 	fileNames = nameGenerator->GetFileNames(seriesUID.begin()->c_str());
 	reader->SetFileNames(fileNames);
@@ -107,7 +55,6 @@ BronchialSegmentation::BronchialSegmentation(int argc, char** argv)
 	}
 	std::cout << "Threshold below \"" << minIntensity << "\"" << std::endl;
 	std::cout << "Threshold above \"" << maxIntensity << "\"" << std::endl;
-	typedef itk::ThresholdImageFilter<Image3DType> ThresholdImageFilterType;
 	ThresholdImageFilterType::Pointer thresholdFilter = ThresholdImageFilterType::New();
 	thresholdFilter->ThresholdOutside(minIntensity, maxIntensity);
 	thresholdFilter->SetOutsideValue(0);
@@ -260,7 +207,6 @@ BronchialSegmentation::BronchialSegmentation(int argc, char** argv)
 		itksys::SystemTools::MakeDirectory(writedir);
 
 		// generate the file names
-		typedef itk::NumericSeriesFileNames OutputNamesGeneratorType;
 		OutputNamesGeneratorType::Pointer outputNames = OutputNamesGeneratorType::New();
 		std::string seriesFormat = std::string(writedir) + "/image-%05d.dcm";
 		outputNames->SetSeriesFormat(seriesFormat.c_str());
@@ -269,7 +215,6 @@ BronchialSegmentation::BronchialSegmentation(int argc, char** argv)
 
 		// create series writer
 		reader->Update();
-		typedef itk::ImageSeriesWriter<Image3DType, Image2DType> SeriesWriterType;
 
 		SeriesWriterType::Pointer seriesWriter = SeriesWriterType::New();
 		seriesWriter->SetInput(segmentedImage);
@@ -291,15 +236,6 @@ BronchialSegmentation::BronchialSegmentation(int argc, char** argv)
 int BronchialSegmentation::isEqual(Image3DType::IndexType index1, Image3DType::IndexType index2) const
 {
 	return (index1[0] == index2[0] && index1[1] == index2[1] && index1[2] == index2[2]);
-}
-
-Node* buildGraph(Image3DType* image)
-{
-	Image3DType::RegionType region = image->GetLargestPossibleRegion();
-	Image3DType::SizeType size = region.GetSize();
-
-	std::cout << size << std::endl;
-	return nullptr;
 }
 
 int BronchialSegmentation::findIndex(Image3DType::SizeType size, Image3DType::IndexType index) const

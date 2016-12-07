@@ -16,8 +16,8 @@ IF(VTK_FOUND)
 ENDIF(VTK_FOUND)
 
 INCLUDE_DIRECTORIES(${BronchialSegmentation_SOURCE_DIR})
-ADD_EXECUTABLE(BronchialSegmentation BronchialSegmentation.cxx)
+ADD_EXECUTABLE(Tests Tests.cxx BronchialSegmentation.cxx)
 
-TARGET_LINK_LIBRARIES(BronchialSegmentation
+TARGET_LINK_LIBRARIES(Tests
 	${VTK_LIBRARIES} ${ITK_LIBRARIES}
 	)
